@@ -1,3 +1,4 @@
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, \
     QLineEdit, QPushButton, QMainWindow, QTableWidget, QTableWidgetItem, \
     QDialog, QVBoxLayout, QComboBox
@@ -19,12 +20,12 @@ class MainWindow(QMainWindow):
         add_student_action.triggered.connect(self.insert)
         file_menu_item.addAction(add_student_action)
 
+        about_action = QAction("About", self)
+        help_menu_item.addAction(about_action)
+
         search_student_action = QAction("Search Student", self)
         search_student_action.triggered.connect(self.search)
         edit_menu_item.addAction(search_student_action)
-
-        about_action = QAction("About", self)
-        help_menu_item.addAction(about_action)
 
         self.table = QTableWidget()
         self.table.setColumnCount(4)
@@ -47,8 +48,8 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def search(self):
-        search_dialog = SearchDialog()
-        search_dialog.exec()
+        dialog = SearchDialog()
+        dialog.exec()
 
 
 class InsertDialog(QDialog):
@@ -108,19 +109,31 @@ class SearchDialog(QDialog):
         layout = QVBoxLayout()
 
         # Add search student widget
-        self.search_student_name = QLineEdit()
-        self.search_student_name.setPlaceholderText("Name")
-        layout.addWidget(self.search_student_name)
+        self.student_name = QLineEdit()
+        self.student_name.setPlaceholderText("Name")
+        layout.addWidget(self.student_name)
 
         # Add a submit button
         search_button = QPushButton("Search")
-        search_button.clicked.connect(self.search_for_student)
+        search_button.clicked.connect(self.search)
         layout.addWidget(search_button)
 
         self.setLayout(layout)
 
-    def search_for_student(self):
-        pass
+    def search(self):
+        name = self.student_name.text()
+        connection = sqlite3.connect("database.db")
+        cursor = connection.cursor()
+        result = cursor.execute("SELECT * FROM students WHERE name = ?", (name, ))
+        rows = list(result)
+        print(rows)
+        items = main_window.table.findItems(name, Qt.MatchFlag.MatchFixedString)
+        for item in items:
+            print(item)
+            main_window.table.item(item.row(), 1).setSelected(True)
+
+        cursor.close()
+        connection.close()
 
 
 app = QApplication(sys.argv)
